@@ -12,6 +12,7 @@ import (
 	"github.com/free5gc/openapi/nrf/NFManagement"
 	udr_context "github.com/free5gc/udr/internal/context"
 	"github.com/free5gc/udr/internal/logger"
+	sbi_metrics "github.com/free5gc/util/metrics/sbi"
 )
 
 type NrfService struct {
@@ -33,6 +34,7 @@ func (ns *NrfService) getNFManagementClient(uri string) *NFManagement.APIClient 
 
 	configuration := NFManagement.NewConfiguration()
 	configuration.SetBasePath(uri)
+	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	client = NFManagement.NewAPIClient(configuration)
 
 	ns.nfMngmntMu.RUnlock()
@@ -46,10 +48,9 @@ func (ns *NrfService) buildNFProfile(context *udr_context.UDRContext) (models.Nr
 	// config := factory.UdrConfig
 
 	profile := models.NrfNfManagementNfProfile{
-		NfInstanceId:  context.NfId,
-		NfType:        models.NrfNfManagementNfType_UDR,
-		NfStatus:      models.NrfNfManagementNfStatus_REGISTERED,
-		Ipv4Addresses: []string{context.RegisterIPv4},
+		NfInstanceId: context.NfId,
+		NfType:       models.NrfNfManagementNfType_UDR,
+		NfStatus:     models.NrfNfManagementNfStatus_REGISTERED,
 		UdrInfo: &models.UdrInfo{
 			SupportedDataSets: []models.DataSetId{
 				// models.DataSetId_APPLICATION,
@@ -58,6 +59,11 @@ func (ns *NrfService) buildNFProfile(context *udr_context.UDRContext) (models.Nr
 				models.DataSetId_SUBSCRIPTION,
 			},
 		},
+	}
+	if context.RegisterIP.Is6() {
+		profile.Ipv6Addresses = append(profile.Ipv6Addresses, context.RegisterIP.String())
+	} else if context.RegisterIP.Is4() {
+		profile.Ipv4Addresses = append(profile.Ipv4Addresses, context.RegisterIP.String())
 	}
 
 	var services []models.NrfNfManagementNfService
@@ -82,6 +88,7 @@ func (ns *NrfService) SendRegisterNFInstance(ctx context.Context, nrfUri string)
 
 	configuration := NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
+	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	client := ns.getNFManagementClient(nrfUri)
 
 	finish := false
@@ -139,6 +146,7 @@ func (ns *NrfService) SendDeregisterNFInstance() (err error) {
 	// Set client and set url
 	configuration := NFManagement.NewConfiguration()
 	configuration.SetBasePath(udrSelf.NrfUri)
+	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	client := ns.getNFManagementClient(udrSelf.NrfUri)
 
 	deregisterReq := &NFManagement.DeregisterNFInstanceRequest{
@@ -157,6 +165,7 @@ func (ns *NrfService) SendSearchNFInstances(nrfUri string,
 	// Set client and set url
 	configuration := NFDiscovery.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
+	configuration.SetMetrics(sbi_metrics.SbiMetricHook)
 	client := NFDiscovery.NewAPIClient(configuration)
 
 	ctx, _, err := udr_context.GetSelf().GetTokenCtx(models.ServiceName_NNRF_DISC, models.NrfNfManagementNfType_NRF)

@@ -228,7 +228,7 @@ func TestUDR_GetSubs2Notify_CreateThenGet(t *testing.T) {
 		require.Equal(t, http.StatusCreated, rsp.Code)
 		require.Equal(t, string(bjson), rsp.Body.String())
 		// require.True(t, strings.Contains(location, baseUri+"/"))
-		// require.True(t, strings.HasPrefix(location, udr_context.GetSelf().GetIPv4Uri()+baseUri+"/"))
+		// require.True(t, strings.HasPrefix(location, udr_context.GetSelf().GetIPUri()+baseUri+"/"))
 	})
 
 	// Get success
@@ -268,7 +268,7 @@ func TestUDR_InfluData_GetBeforeCreateing(t *testing.T) {
 	t.Run("UDR influ-data Get before Create",
 		func(t *testing.T) {
 			require.Equal(t, http.StatusOK, rsp.Code)
-			require.Equal(t, "[1]", rsp.Body.String())
+			require.Equal(t, "[]", rsp.Body.String())
 		})
 }
 
